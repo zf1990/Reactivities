@@ -30,7 +30,7 @@ namespace Application.Activities
                 if (activity == null)
                     throw new Exception("Cannot find the activity in question");
 
-                _context.Activities.Remove(activity);
+                _context.Activities.Remove(activity); 
                 var success = await _context.SaveChangesAsync(cancellationToken) > 0;
                 //if saveChangesAsync == 0, then the save failed and something went wrong. Therefore, no activities were saved to the database.
                 if (success)
