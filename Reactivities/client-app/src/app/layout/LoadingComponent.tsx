@@ -11,3 +11,5 @@ export const LoadingComponent: React.FC<{
     </Dimmer>
   );
 };
+
+export default LoadingComponent;
