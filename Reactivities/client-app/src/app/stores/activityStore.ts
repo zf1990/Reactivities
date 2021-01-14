@@ -3,7 +3,6 @@ import {
   action,
   computed,
   configure,
-  makeAutoObservable,
   runInAction,
   makeObservable,
 } from "mobx";
@@ -17,8 +16,7 @@ class ActivityStore {
   activityRegistry = new Map();
   activities: IActivity[] = [];
   loadingInitial = false;
-  selectedActivity: IActivity | undefined;
-  editMode = false;
+  activity: IActivity | null = null;
   submitting = false;
   target = "";
 
@@ -28,20 +26,16 @@ class ActivityStore {
       activityRegistry: observable,
       activities: observable,
       loadingInitial: observable,
-      selectedActivity: observable,
-      editMode: observable,
+      activity: observable,
       submitting: observable,
       target: observable,
       activitiesByDate: computed,
       loadActivities: action,
       deleteActivity: action,
+      loadActivity: action,
       createActivity: action,
-      openCreateForm: action,
-      openEditForm: action,
-      cancelSelectedActivity: action,
-      cancelFormOpen: action,
+      clearActivity: action,
       editActivity: action,
-      selectActivity: action,
     });
   }
 
@@ -91,14 +85,38 @@ class ActivityStore {
     }
   };
 
+  loadActivity = async (id: string) => {
+    let activity = this.getActivity(id);
+    if (activity) {
+      this.activity = activity;
+    } else {
+      this.loadingInitial = true;
+      try {
+        activity = await agent.Activities.details(id);
+        runInAction(() => {
+          this.activity = activity;
+          this.loadingInitial = false;
+        });
+      } catch (err) {
+        console.log(
+          "Oh fuck, something went wrong with fetching this activity..." + err
+        );
+        runInAction(() => (this.loadingInitial = false));
+      }
+    }
+  };
+
+  getActivity = (id: string) => {
+    return this.activityRegistry.get(id);
+  };
+
   createActivity = async (activity: IActivity) => {
     this.submitting = true;
     try {
       await agent.Activities.create(activity);
       runInAction(() => {
         this.activityRegistry.set(activity.id, activity);
-        this.selectedActivity = activity;
-        this.editMode = false;
+        this.activity = activity;
         this.submitting = false;
       });
     } catch (err) {
@@ -107,22 +125,8 @@ class ActivityStore {
     }
   };
 
-  openCreateForm = () => {
-    this.editMode = true;
-    this.selectedActivity = undefined;
-  };
-
-  openEditForm = (id: string) => {
-    this.selectedActivity = this.activityRegistry.get(id);
-    this.editMode = true;
-  };
-
-  cancelSelectedActivity = () => {
-    this.selectedActivity = undefined;
-  };
-
-  cancelFormOpen = () => {
-    this.editMode = false;
+  clearActivity = () => {
+    this.activity = null;
   };
 
   editActivity = async (activity: IActivity) => {
@@ -131,19 +135,12 @@ class ActivityStore {
       await agent.Activities.update(activity);
       runInAction(() => {
         this.activityRegistry.set(activity.id, activity);
-        this.selectedActivity = activity;
-        this.editMode = false;
+        this.activity = activity;
         this.submitting = false;
       });
     } catch (err) {
       runInAction(() => (this.submitting = false));
     }
-  };
-
-  selectActivity = (id: string) => {
-    this.selectedActivity = this.activityRegistry.get(id);
-    this.editMode = false;
-    console.log("Select activity method is triggered");
   };
 }
 
