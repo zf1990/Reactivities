@@ -72,7 +72,9 @@ class ActivityStore {
         });
       });
     } catch (err) {
-      console.log("Oh fuck, something went wrong." + err);
+      runInAction(() => {
+        this.loadingInitial = false;
+      });
     } finally {
       runInAction(() => (this.loadingInitial = false));
     }
