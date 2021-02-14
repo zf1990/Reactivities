@@ -23,6 +23,8 @@ namespace Application.Activities
             public string Category { get; set; }
             public string City { get; set; }
             public string Venue { get; set; }
+
+            public Activity Activity { get; set; }
         }
     }
 
@@ -30,12 +32,7 @@ namespace Application.Activities
     {
         public CommandValidator()
         {
-            RuleFor(x => x.Title).NotEmpty();
-            RuleFor(x => x.Description).NotEmpty();
-            RuleFor(x => x.Date).NotEmpty();
-            RuleFor(x => x.Category).NotEmpty();
-            RuleFor(x => x.City).NotEmpty();
-            RuleFor(x => x.Venue).NotEmpty();
+            RuleFor(x => x.Activity).SetValidator(new ActivityValidator());
         }
     }
 
