@@ -3,10 +3,10 @@ import { Grid } from "semantic-ui-react";
 import ActivityList from "./ActivityList";
 import { observer } from "mobx-react-lite";
 import LoadingComponent from "../../../app/layout/LoadingComponent";
-import ActivityStore from "../../../app/stores/activityStore";
+import { useStore } from "../../../app/stores/store";
 
 const ActivityDashboard: React.FC = () => {
-  const activityStore = useContext(ActivityStore);
+  const { activityStore } = useStore();
 
   useEffect(() => {
     activityStore.loadActivities();

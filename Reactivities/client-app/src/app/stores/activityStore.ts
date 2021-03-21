@@ -12,7 +12,7 @@ import { IActivity } from "../models/activity";
 
 configure({ enforceActions: "always" });
 
-class ActivityStore {
+export default class ActivityStore {
   activityRegistry = new Map();
   activities: IActivity[] = [];
   loadingInitial = false;
@@ -162,4 +162,4 @@ class ActivityStore {
   };
 }
 
-export default createContext(new ActivityStore());
+//export default createContext(new ActivityStore());

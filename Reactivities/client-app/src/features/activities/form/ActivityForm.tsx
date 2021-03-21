@@ -5,6 +5,7 @@ import { v4 as uuid } from "uuid";
 import ActivityStore from "../../../app/stores/activityStore";
 import { observer } from "mobx-react-lite";
 import { RouteComponentProps } from "react-router-dom";
+import { useStore } from "../../../app/stores/store";
 
 interface DetailParams {
   id: string;
@@ -14,6 +15,7 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
   match,
   history,
 }) => {
+  const { activityStore } = useStore();
   const {
     createActivity,
     editActivity,
@@ -21,7 +23,7 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
     activity: initialFormState,
     loadActivity,
     clearActivity,
-  } = useContext(ActivityStore);
+  } = activityStore;
 
   const [activity, setActivity] = useState<IActivity>({
     id: "",

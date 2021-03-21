@@ -4,7 +4,7 @@ import "./app/layout/styles.css";
 import App from "./app/layout/App";
 import reportWebVitals from "./reportWebVitals";
 import { Router } from "react-router-dom";
-import { createBrowserHistory } from "history";
+import { createBrowserHistory } from "history"; //From React Router
 import ScrollToTop from "./app/layout/ScrollToTop";
 import "react-toastify/dist/ReactToastify.min.css";
 

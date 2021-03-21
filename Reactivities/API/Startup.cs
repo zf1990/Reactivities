@@ -5,6 +5,7 @@ using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using API.Middleware;
 using Application.Activities;
+using Application.Core;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -46,6 +47,7 @@ namespace API
             });
             //This will look into the class to find out all of the mediators that it needs for this particular mediator.
             services.AddMediatR(typeof(List).Assembly);
+            services.AddAutoMapper(typeof(MappingProfiles).Assembly);
 
             services.AddControllers().AddFluentValidation(cfg =>
                 {
@@ -57,15 +59,13 @@ namespace API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseMiddleware<ErrorHandlingMiddleware>();
+            app.UseMiddleware<ExceptionMiddleware>();
             if (env.IsDevelopment())
             {
+                //app.UseDeveloperExceptionPage();
+                // app.UseSwagger();
+                // app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
             }
-            else
-            {
-
-            }
-
             //app.UseHttpsRedirection();
 
             app.UseRouting();

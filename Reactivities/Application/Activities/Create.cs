@@ -1,3 +1,4 @@
+using Application.Core;
 using Domain;
 using FluentValidation;
 using MediatR;
@@ -14,16 +15,8 @@ namespace Application.Activities
 {
     public class Create
     {
-        public class Command : IRequest
+        public class Command : IRequest<Result<Unit>>
         {
-            public Guid Id { get; set; }
-            public string Title { get; set; }
-            public string Description { get; set; }
-            public DateTime Date { get; set; }
-            public string Category { get; set; }
-            public string City { get; set; }
-            public string Venue { get; set; }
-
             public Activity Activity { get; set; }
         }
     }
@@ -36,7 +29,7 @@ namespace Application.Activities
         }
     }
 
-    public class Handler : IRequestHandler<Command>
+    public class Handler : IRequestHandler<Command, Result<Unit>>
     {
         private readonly DataContext _context;
 
@@ -44,26 +37,19 @@ namespace Application.Activities
         {
             this._context = context;
         }
-        public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
+        public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var activity = new Activity
-            {
-                Id = request.Id,
-                Title = request.Title,
-                Description = request.Description,
-                Category = request.Category,
-                Date = request.Date,
-                City = request.City,
-                Venue = request.Venue
-            };
-
-            _context.Activities.Add(activity);
-            var success = await _context.SaveChangesAsync(cancellationToken) > 0;
+            _context.Activities.Add(request.Activity);
+            await _context.SaveChangesAsync(cancellationToken);
             //if saveChangesAsync == 0, then the save failed and something went wrong. Therefore, no activities were saved to the database.
-            if (success)
-                return Unit.Value;
+            var success = await _context.SaveChangesAsync(cancellationToken) > 0;
 
-            throw new Exception("Problem saving acitivity to the database!!");
+            if (!success)
+                return Result<Unit>.Failure("Failed to create activity");
+
+            return Result<Unit>.Success(Unit.Value);
+
+            //throw new Exception("Oh fuck, something went wrong with cerating the activity.");
         }
     }
 }

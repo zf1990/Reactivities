@@ -2,7 +2,10 @@ using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Application.Core;
 using Application.Errors;
+using AutoMapper;
+using Domain;
 using FluentValidation;
 using MediatR;
 using Persistance;
@@ -11,60 +14,48 @@ namespace Application.Activities
 {
     public class Edit
     {
-        public class Command : IRequest
+        public class Command : IRequest<Result<Unit>>
         {
             //Create the edit
+            public Activity Activity { get; set; }
+
             public Guid Id { get; set; }
-            public string Title { get; set; }
-            public string Description { get; set; }
-            public DateTime? Date { get; set; }
-            public string Category { get; set; }
-            public string City { get; set; }
-            public string Venue { get; set; }
         }
 
         public class CommandValidator : AbstractValidator<Command>
         {
             public CommandValidator()
             {
-                RuleFor(x => x.Title).NotEmpty();
-                RuleFor(x => x.Description).NotEmpty();
-                RuleFor(x => x.Date).NotEmpty();
-                RuleFor(x => x.Category).NotEmpty();
-                RuleFor(x => x.City).NotEmpty();
-                RuleFor(x => x.Venue).NotEmpty();
+                RuleFor(x => x.Activity).SetValidator(new ActivityValidator());
             }
         }
 
-        public class Handler : IRequestHandler<Command>
+        public class Handler : IRequestHandler<Command, Result<Unit>>
         {
 
             private readonly DataContext _context;
-            public Handler(DataContext context)
+            private readonly IMapper _mapper;
+            public Handler(DataContext context, IMapper mapper)
             {
                 _context = context;
+                _mapper = mapper;
             }
 
-            public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
 
                 var activity = await _context.Activities.FindAsync(request.Id);
 
                 if (activity == null)
-                    throw new RestException(HttpStatusCode.NotFound, new { Activity = "Not found" });
+                    return null;
 
-                activity.Title = request.Title ?? activity.Title;
-                activity.Category = request.Category ?? activity.Category;
-                activity.City = request.City ?? activity.City;
-                activity.Description = request.Description ?? activity.Description;
-                activity.Venue = request.Venue ?? activity.Venue;
-                activity.Date = request.Date ?? activity.Date;
+                _mapper.Map(request.Activity, activity);
 
                 var success = await _context.SaveChangesAsync(cancellationToken) > 0;
-                if (success)
-                    return Unit.Value;
+                if (!success)
+                    return Result<Unit>.Failure("Something went wrong with the edit");
 
-                throw new Exception("Oh fuck, something went wrong with the edit.");
+                return Result<Unit>.Success(Unit.Value);
 
 
             }

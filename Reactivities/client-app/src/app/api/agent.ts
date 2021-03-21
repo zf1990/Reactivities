@@ -1,24 +1,44 @@
-import axios, { AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { toast } from "react-toastify";
 import { history } from "../..";
 import { IActivity } from "../models/activity";
+import { store } from "../stores/store";
 
 axios.defaults.baseURL = "http://localhost:5000/api";
 
-axios.interceptors.response.use(undefined, (error) => {
-  if (error.message === "Network Error" && !error.response)
-    toast.error("Network error - Please make sure your API is turned on");
-  const { status, data, config } = error.response;
-  if (
-    status === 404 ||
-    (status === 400 &&
-      config.method === "get" &&
-      data.errors.hasOwnProperty("id"))
-  )
-    history.push("/notfound");
+axios.interceptors.response.use(undefined, (error: AxiosError) => {
+  const { status, data, config } = error.response!;
+  switch (status) {
+    case 400:
+      if (typeof data === "string") {
+        toast.error(data);
+      }
 
-  if (status === 500)
-    toast.error("Sever error - Check the terminal for more info!!!");
+      if (config.method === "get" && data.errors.hasOwnProperty("id")) {
+        history.push("/not-found");
+      }
+      if (data.errors) {
+        const modelStateErrors = [];
+        for (const key in data.errors) {
+          if (data.errors[key]) modelStateErrors.push(data.errors[key]);
+        }
+        throw modelStateErrors.flat();
+      } else {
+        toast.error("Bad Request");
+      }
+      break;
+    case 401:
+      toast.error("Unauthorized");
+      break;
+    case 404:
+      toast.error("not found");
+      history.push("/not-found");
+      break;
+    case 500:
+      store.commonStore.setServerError(data);
+      history.push("/server-error");
+      break;
+  }
 });
 
 const responseBody = (response: AxiosResponse) => response.data;
