@@ -1,11 +1,17 @@
-import React, { FormEvent, useContext, useEffect, useState } from "react";
-import { Button, Form, Grid, Segment } from "semantic-ui-react";
+import React, { useEffect, useState } from "react";
+import { Button, Header, Segment } from "semantic-ui-react";
 import { IActivity } from "../../../app/models/activity";
 import { v4 as uuid } from "uuid";
-import ActivityStore from "../../../app/stores/activityStore";
 import { observer } from "mobx-react-lite";
 import { RouteComponentProps } from "react-router-dom";
 import { useStore } from "../../../app/stores/store";
+import { Formik, Form } from "formik";
+import * as Yup from "yup";
+import MyTextInput from "../../../app/common/form/MyTextInput";
+import MyTextArea from "../../../app/common/form/MyTextArea";
+import MySelectInput from "../../../app/common/form/MySelectInput";
+import { options } from "../../../app/common/options/categoryOptions";
+import MyDatePicker from "../../../app/common/form/MyDateInput";
 
 interface DetailParams {
   id: string;
@@ -17,12 +23,12 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
 }) => {
   const { activityStore } = useStore();
   const {
-    createActivity,
-    editActivity,
     submitting,
     activity: initialFormState,
     loadActivity,
     clearActivity,
+    createActivity,
+    editActivity,
   } = activityStore;
 
   const [activity, setActivity] = useState<IActivity>({
@@ -30,7 +36,7 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
     title: "",
     category: "",
     description: "",
-    date: "",
+    date: null,
     city: "",
     venue: "",
   });
@@ -53,7 +59,16 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
     activity.id.length,
   ]);
 
-  const handleSubmit = () => {
+  const validationSchema = Yup.object({
+    title: Yup.string().required("Activity title is required."),
+    description: Yup.string().required("Activity description is required"),
+    category: Yup.string().required(),
+    date: Yup.string().required("Date is required").nullable(),
+    venue: Yup.string().required(),
+    city: Yup.string().required(),
+  });
+
+  const handleFormSubmit = (activity: IActivity) => {
     if (activity.id.length === 0) {
       let newActivity = {
         ...activity,
@@ -69,57 +84,36 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
     }
   };
 
-  const handleInputChange = (
-    event: FormEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = event.currentTarget;
-    setActivity({ ...activity, [name]: value });
-  };
-
   return (
-    <Grid>
-      <Grid.Column width={10}>
-        <Segment clearing>
-          <Form onSubmit={handleSubmit}>
-            <Form.Input
-              placeholder="Title"
-              value={activity.title}
-              name="title"
-              onChange={handleInputChange}
-            />
-            <Form.TextArea
-              rows={2}
-              placeholder="Description"
-              name="description"
-              value={activity.description}
-              onChange={handleInputChange}
-            />
-            <Form.Input
+    <Segment clearing>
+      <Header content="Activity Details" sub color="teal" />
+      <Formik
+        initialValues={activity}
+        onSubmit={(values) => handleFormSubmit(values)}
+        validationSchema={validationSchema}
+        enableReinitialize
+      >
+        {({ handleSubmit, isValid, isSubmitting, dirty }) => (
+          <Form className="ui form" onSubmit={handleSubmit}>
+            <MyTextInput name="title" placeholder="Title" />
+            <MyTextArea placeholder="Description" name="description" rows={3} />
+            <MySelectInput
               placeholder="Category"
               name="category"
-              value={activity.category}
-              onChange={handleInputChange}
+              options={options}
             />
-            <Form.Input
-              type="datetime-local"
-              placeholder="Date"
+            <MyDatePicker
+              placeholderText="Date"
               name="date"
-              value={activity.date}
-              onChange={handleInputChange}
+              showTimeSelect
+              timeCaption="time"
+              dateFormat="MMMM d, yyyy h:mm aa"
             />
-            <Form.Input
-              placeholder="City"
-              name="city"
-              value={activity.city}
-              onChange={handleInputChange}
-            />
-            <Form.Input
-              placeholder="Venue"
-              name="venue"
-              value={activity.venue}
-              onChange={handleInputChange}
-            />
+            <Header content="Location Details" sub color="teal" />
+            <MyTextInput placeholder="City" name="city" />
+            <MyTextInput placeholder="Venue" name="venue" />
             <Button
+              disabled={!isValid || isSubmitting || !dirty}
               floated="right"
               positive
               type="submit"
@@ -134,9 +128,9 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
               onClick={() => history.push("/activities")}
             />
           </Form>
-        </Segment>
-      </Grid.Column>
-    </Grid>
+        )}
+      </Formik>
+    </Segment>
   );
 };
 

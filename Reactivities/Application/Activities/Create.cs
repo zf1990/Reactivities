@@ -1,4 +1,5 @@
 using Application.Core;
+using AutoMapper;
 using Domain;
 using FluentValidation;
 using MediatR;
@@ -40,16 +41,15 @@ namespace Application.Activities
         public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
         {
             _context.Activities.Add(request.Activity);
-            await _context.SaveChangesAsync(cancellationToken);
             //if saveChangesAsync == 0, then the save failed and something went wrong. Therefore, no activities were saved to the database.
-            var success = await _context.SaveChangesAsync(cancellationToken) > 0;
+            int Number_Of_State_Entries = await _context.SaveChangesAsync();
+            var success = Number_Of_State_Entries > 0;
+
 
             if (!success)
                 return Result<Unit>.Failure("Failed to create activity");
 
             return Result<Unit>.Success(Unit.Value);
-
-            //throw new Exception("Oh fuck, something went wrong with cerating the activity.");
         }
     }
 }

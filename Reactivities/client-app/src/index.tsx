@@ -7,6 +7,7 @@ import { Router } from "react-router-dom";
 import { createBrowserHistory } from "history"; //From React Router
 import ScrollToTop from "./app/layout/ScrollToTop";
 import "react-toastify/dist/ReactToastify.min.css";
+import "react-datepicker/dist/react-datepicker.css";
 
 export const history = createBrowserHistory();
 

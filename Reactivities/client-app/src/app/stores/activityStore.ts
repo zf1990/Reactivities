@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import {
   observable,
   action,
@@ -6,17 +7,17 @@ import {
   runInAction,
   makeObservable,
 } from "mobx";
-import { createContext, SyntheticEvent } from "react";
+import { SyntheticEvent } from "react";
 import agent from "../api/agent";
 import { IActivity } from "../models/activity";
 
 configure({ enforceActions: "always" });
 
 export default class ActivityStore {
-  activityRegistry = new Map();
+  activityRegistry = new Map<string, IActivity>();
   activities: IActivity[] = [];
   loadingInitial = false;
-  activity: IActivity | null = null;
+  activity: IActivity | undefined = undefined;
   submitting = false;
   target = "";
 
@@ -40,22 +41,18 @@ export default class ActivityStore {
   }
 
   get activitiesByDate() {
-    return this.groupActivitiesByDate(
-      Array.from(this.activityRegistry.values())
+    return Array.from(this.activityRegistry.values()).sort(
+      (a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime()
     );
   }
 
-  groupActivitiesByDate(activities: IActivity[]) {
-    const sortedActivities = activities.sort(
-      (a, b) => Date.parse(a.date) - Date.parse(b.date)
-    );
-
+  get groupActivitiesByDate() {
     return Object.entries(
-      sortedActivities.reduce((activities, activity) => {
-        const date = activity.date.split("T")[0];
+      this.activitiesByDate.reduce((activities, activity) => {
+        const date = format(activity.date!, "dd MMM yyyy");
         activities[date] = activities[date]
           ? [...activities[date], activity]
-          : [activity]; //if activities[date] exist, previous activities + current activity, othersie, just be activity/  return the activities
+          : [activity]; //if activities[date] exist, previous activities + current activity, otherwise, just be activity/  return the activities
         return activities;
       }, {} as { [key: string]: IActivity[] })
     );
@@ -65,13 +62,13 @@ export default class ActivityStore {
     this.loadingInitial = true;
     try {
       const activities = await agent.Activities.list();
-      runInAction(() => {
-        activities.forEach((a: IActivity) => {
-          a.date = a.date.split(".")[0];
-          this.activityRegistry.set(a.id, a);
-        });
+
+      activities.forEach((a: IActivity) => {
+        a.date = new Date(a.date!);
+        this.activityRegistry.set(a.id, a);
       });
     } catch (err) {
+      console.log(err);
       runInAction(() => {
         this.loadingInitial = false;
       });
@@ -131,11 +128,12 @@ export default class ActivityStore {
   createActivity = async (activity: IActivity) => {
     this.submitting = true;
     try {
+      activity.date = new Date(activity.date!);
       await agent.Activities.create(activity);
+      this.submitting = false;
       runInAction(() => {
         this.activityRegistry.set(activity.id, activity);
         this.activity = activity;
-        this.submitting = false;
       });
     } catch (err) {
       runInAction(() => (this.submitting = false));
@@ -144,7 +142,7 @@ export default class ActivityStore {
   };
 
   clearActivity = () => {
-    this.activity = null;
+    this.activity = undefined;
   };
 
   editActivity = async (activity: IActivity) => {
@@ -157,6 +155,7 @@ export default class ActivityStore {
         this.submitting = false;
       });
     } catch (err) {
+      console.log(err);
       runInAction(() => (this.submitting = false));
     }
   };
