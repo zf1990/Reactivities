@@ -3,15 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
+using API.Extentions;
 using API.Middleware;
 using Application.Activities;
 using Application.Core;
 using FluentValidation.AspNetCore;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,14 +45,22 @@ namespace API
             {
                 opt.AddPolicy("CorsPolicy", policy =>
                 {
-                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000");
+                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(new string[] { "http://localhost:3000" });
                 });
             });
             //This will look into the class to find out all of the mediators that it needs for this particular mediator.
             services.AddMediatR(typeof(List).Assembly);
             services.AddAutoMapper(typeof(MappingProfiles).Assembly);
 
-            services.AddControllers().AddFluentValidation(cfg =>
+            services.AddIdentityServices(Configuration);
+
+
+            services.AddControllers(opt =>
+            {  //This ensures every single point in our API now require authentication.
+                var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+                opt.Filters.Add(new AuthorizeFilter(policy));
+            })
+            .AddFluentValidation(cfg =>
                 {
                     cfg.RegisterValidatorsFromAssemblyContaining<Create>();
                 }
@@ -62,14 +73,14 @@ namespace API
             app.UseMiddleware<ExceptionMiddleware>();
             if (env.IsDevelopment())
             {
-                //app.UseDeveloperExceptionPage();
+                app.UseDeveloperExceptionPage();
                 // app.UseSwagger();
                 // app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
             }
             //app.UseHttpsRedirection();
 
             app.UseRouting();
-
+            app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors("CorsPolicy");
 
